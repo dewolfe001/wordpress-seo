@@ -185,17 +185,24 @@ abstract class WPSEO_Plugin_Importer {
 		global $wpdb;
 
 		// First we create a temp table with all the values for meta_key.
-		$result = $wpdb->query(
-			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange -- This is intentional + temporary.
-				"CREATE TEMPORARY TABLE tmp_meta_table SELECT * FROM {$wpdb->postmeta} WHERE meta_key = %s",
-				$old_key
-			)
-		);
+		$result = $wpdb->query( "CREATE TABLE IF NOT EXISTS tmp_meta_table (meta_id int NOT NULL identity(1,1), post_id int NOT NULL default 0, meta_key nvarchar(255) NOT NULL default '', meta_value nvarchar(max) NOT NULL, PRIMARY KEY (meta_id), KEY post_id (post_id), constraint tmp_meta_table" . "_PK PRIMARY KEY NONCLUSTERED (meta_id))" );
 		if ( $result === false ) {
 			$this->set_missing_db_rights_status();
 			return false;
 		}
+
+		// Scrub out any enties from the last pass.
+		$wpdb->query( "DELETE FROM tmp_meta_table" );
+
+		// populate the table with old entries
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO tmp_meta_table SELECT * FROM {$wpdb->postmeta} WHERE meta_key = %s", $old_key
+			)
+		);
+
+		// With everything done, we insert all our newly cloned lines into the postmeta table.
+		$wpdb->query( "INSERT INTO {$wpdb->postmeta} SELECT * FROM tmp_meta_table" );
 
 		// Delete all the values in our temp table for posts that already have data for $new_key.
 		$wpdb->query(
@@ -226,7 +233,7 @@ abstract class WPSEO_Plugin_Importer {
 
 		// Now we drop our temporary table.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange -- This is intentional + a temporary table.
-		$wpdb->query( 'DROP TEMPORARY TABLE IF EXISTS tmp_meta_table' );
+		$wpdb->query( 'DROP TABLE IF EXISTS tmp_meta_table' );
 
 		return true;
 	}

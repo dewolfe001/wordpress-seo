@@ -4,6 +4,11 @@
 [![Stable Version](https://poser.pugx.org/yoast/wordpress-seo/v/stable.svg)](https://packagist.org/packages/yoast/wordpress-seo)
 [![License](https://poser.pugx.org/yoast/wordpress-seo/license.svg)](https://packagist.org/packages/yoast/wordpress-seo)
 
+## ProjectNami
+
+This is a fork to execute import code without there being a need for temporary table creation in the fashion that will work on an SQL Server.
+
+
 ## Welcome to the Yoast SEO GitHub repository
 
 
